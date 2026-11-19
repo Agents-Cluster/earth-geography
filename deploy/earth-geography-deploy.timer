@@ -1,0 +1,10 @@
+[Unit]
+Description=Check Earth Geography for a new production release
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

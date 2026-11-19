@@ -1,0 +1,10 @@
+[Unit]
+Description=Deploy Earth Geography from the public main branch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+ExecStart=/usr/local/sbin/earth-geography-deploy

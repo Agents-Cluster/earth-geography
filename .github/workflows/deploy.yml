@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Build production
 
 on:
   push:
@@ -7,15 +7,13 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: production-build
   cancel-in-progress: true
 
 jobs:
-  build:
+  production-build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,26 +34,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Copy custom domain
-        run: cp CNAME dist/CNAME
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          enablement: true
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
+          name: earth-geography-dist
           path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4

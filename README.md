@@ -63,7 +63,7 @@ scripts/
   generate-countries.mjs  数据生成脚本
 ```
 
-## 数据来源（全部离线打包，运行时零 API 依赖）
+## 数据来源
 
 | 数据 | 来源 |
 | --- | --- |
@@ -77,11 +77,17 @@ scripts/
 
 修改 `scripts/generate-countries.mjs`（如补充中文首都对照表）后运行 `npm run gen:data` 重新生成。
 
+## 生产部署
+
+- `main` 分支 push 后，GitHub Actions 执行 `npm ci`、类型检查和生产构建。
+- 生产服务器 `8.153.164.28` 上的 systemd 定时器每分钟拉取公开 `main` 分支；构建通过后写入新 release，再原子切换 `current`，失败不会替换当前版本。
+- Nginx 和 Certbot 为 `https://earth.aniday-ai.top` 提供 HTTPS 静态服务，服务器配置模板位于 `deploy/earth.aniday-ai.top.nginx.conf`。
+
 ## 已知限制
 
 - 移动端详情卡会从右侧改为底部抽屉，较长内容需要在卡片内滚动
-- GitHub Actions 在 `main` 分支 push 后运行类型检查、构建并发布到 GitHub Pages
-- 自定义域名为 `https://earth.aniday-ai.top`，仓库根目录 `CNAME` 已固定该域名
+- 服务器定时拉取通常在 `main` 分支 push 后一分钟内开始发布；构建期间仍继续提供上一版页面
+- 自定义域名为 `https://earth.aniday-ai.top`
 - Natural Earth 图层中 ISO 编码为 -99 的区域（索马里兰、北塞浦路斯）使用人工补充的简化数据
 - 法国（含海外领地几何）的人口/面积口径为本土数据；摩纳哥等微型国家依赖拾取层圆点兜底
 - 电话区号/语言/货币名优先中文显示（Intl.DisplayNames），老浏览器回退英文
