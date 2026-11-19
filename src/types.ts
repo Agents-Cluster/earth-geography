@@ -55,3 +55,34 @@ export interface Country extends RawCountry {
   /** 颜色索引拾取编码（= 可拾取列表下标 + 1）；无几何时为 undefined */
   code?: number;
 }
+
+export type HighlightKind = 'time' | 'person' | 'technology' | 'geography';
+
+export interface HighlightToken {
+  text: string;
+  kind?: HighlightKind;
+}
+
+export interface InsightSource {
+  name: string;
+  url?: string;
+}
+
+export interface WorldRecord {
+  title: string;
+  detail: HighlightToken[];
+  source: InsightSource;
+}
+
+/** 国家历史、贡献与世界之最：本地事实和百科历史结果共用此形状。 */
+export interface CountryInsight {
+  history: HighlightToken[];
+  contribution: HighlightToken[];
+  worldRecords: WorldRecord[];
+  source?: string;
+  sourceUrl?: string;
+  fetchedAt?: string;
+  /** true 表示内容来自本地兜底摘要，而非远程百科。 */
+  fallback?: boolean;
+  contributionSource?: InsightSource;
+}

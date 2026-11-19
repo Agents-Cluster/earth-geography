@@ -34,7 +34,11 @@ export function flyTo(
   flight = {
     q: new THREE.Quaternion().setFromUnitVectors(startDir, endDir),
     startDir,
-    dist: THREE.MathUtils.clamp(camera.position.length(), 1.9, 3.2),
+    dist: THREE.MathUtils.clamp(
+      camera.position.length(),
+      controls.minDistance,
+      Math.max(3.2, controls.minDistance),
+    ),
     t0: performance.now(),
     duration,
   };

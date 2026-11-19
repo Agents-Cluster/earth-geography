@@ -13,6 +13,23 @@ export interface SceneCtx {
   setControlsUpdate(enabled: boolean): void;
 }
 
+/** 球体在安全区域内的视觉半径，包含大气辉光的外缘。 */
+const FIT_RADIUS = 1.08;
+
+function cssPixels(name: string, fallback: number): number {
+  const value = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function fitDistance(camera: THREE.PerspectiveCamera, height: number): number {
+  // 取上下安全区中的较大值，让居中的球体同时远离两侧 UI。
+  const safeInset = Math.max(cssPixels('--globe-safe-top', 108), cssPixels('--globe-safe-bottom', 42)) + 12;
+  const usableHeight = Math.max(1, height - safeInset * 2);
+  const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
+  const halfVisibleAngle = Math.atan((usableHeight / Math.max(1, height)) * Math.tan(halfFov));
+  return FIT_RADIUS / Math.sin(halfVisibleAngle);
+}
+
 /** 创建渲染器 / 相机 / 控制器，并启动渲染循环 */
 export function createScene(container: HTMLElement): SceneCtx {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -43,7 +60,16 @@ export function createScene(container: HTMLElement): SceneCtx {
   controls.zoomSpeed = 0.7;
   controls.autoRotate = true;
   controls.autoRotateSpeed = 0.35;
-  controls.update();
+
+  function updateCameraBounds() {
+    const minDistance = Math.max(1.6, fitDistance(camera, container.clientHeight));
+    controls.minDistance = minDistance;
+    controls.maxDistance = Math.max(4.5, minDistance + 1.4);
+    if (camera.position.length() < minDistance) camera.position.setLength(minDistance);
+    controls.update();
+  }
+
+  updateCameraBounds();
 
   const frameCbs: Array<(dt: number, now: number) => void> = [];
   let updateControls = true;
@@ -62,6 +88,7 @@ export function createScene(container: HTMLElement): SceneCtx {
     camera.aspect = container.clientWidth / container.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
+    updateCameraBounds();
   });
 
   return {
