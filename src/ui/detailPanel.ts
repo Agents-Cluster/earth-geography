@@ -11,6 +11,7 @@ import {
 } from '../data/i18n';
 import { getLocalInsight } from '../data/insights';
 import { loadCountryInsight } from '../data/wiki';
+import { getFlagDimensions } from '../data/flagDimensions';
 
 export interface PanelDeps {
   /** alpha-3 -> Country（解析邻国） */
@@ -115,7 +116,8 @@ export function createPanel(el: HTMLElement, deps: PanelDeps): DetailPanel {
       const frame = img.closest('.panel-flag-frame');
       const markLoaded = () => frame?.classList.add('loaded');
       const showFallback = () => {
-        img.hidden = true;
+        // 保留图片占位尺寸，只隐藏其内容，避免失败时容器再次塌缩。
+        img.classList.add('failed');
         frame?.classList.add('loaded');
         frame?.querySelector<HTMLElement>('.panel-flag-fallback')?.removeAttribute('hidden');
       };
@@ -192,8 +194,9 @@ export function createPanel(el: HTMLElement, deps: PanelDeps): DetailPanel {
 
   function renderFlag(c: Country): string {
     const fallback = c.emoji || '旗帜暂不可用';
+    const dimensions = c.a2 ? getFlagDimensions(c.a2) : null;
     const image = c.a2
-      ? `<img class="panel-flag" src="https://flagcdn.com/w320/${c.a2.toLowerCase()}.png" alt="${escHtml(c.en)} 旗帜" decoding="async">`
+      ? `<img class="panel-flag" width="${dimensions?.width}" height="${dimensions?.height}" src="https://flagcdn.com/w320/${c.a2.toLowerCase()}.png" alt="${escHtml(c.en)} 旗帜" decoding="async">`
       : '';
     return `<div class="panel-flag-frame">${image}<span class="panel-flag-fallback"${c.a2 ? ' hidden' : ''}>${escHtml(fallback)}</span></div>`;
   }

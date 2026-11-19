@@ -208,12 +208,16 @@ body {
   height: auto;
 }
 
+.panel-flag.failed {
+  visibility: hidden;
+}
+
 .panel-flag-fallback {
+  position: absolute;
+  inset: 1px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  min-height: 84px;
   font-size: 42px;
   color: var(--muted);
   background: rgba(255, 255, 255, 0.04);
