@@ -83,3 +83,15 @@ for (const c of countries) {
 }
 
 if (unmatchedFeatures.length) console.warn('未匹配到属性数据的区域：', unmatchedFeatures);
+
+export interface WorldData {
+  countries: Country[];
+  pickableCountries: Country[];
+  countryByA3: Map<string, Country>;
+  unmatchedFeatures: string[];
+}
+
+/** 异步启动入口：让应用先完成首屏绘制，再接入地理数据。 */
+export async function loadWorldData(): Promise<WorldData> {
+  return { countries, pickableCountries, countryByA3, unmatchedFeatures };
+}

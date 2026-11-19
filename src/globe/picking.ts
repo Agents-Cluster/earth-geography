@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { geoEquirectangular, geoPath } from 'd3-geo';
 import type { Country } from '../types';
 
-/** 拾取纹理尺寸：4096 宽度下赤道附近 1px ≈ 10km，足以命中绝大多数国家 */
-const W = 4096;
-const H = 2048;
+/** 默认拾取纹理尺寸；拾取只需辨识国家编码，因此使用比显示纹理更低的分辨率。 */
+const DEFAULT_WIDTH = 1024;
+const DEFAULT_HEIGHT = 512;
 
 /**
  * 编码低位校验：有效编码 = (code << 4) | 0b1010。
@@ -43,7 +43,12 @@ function decodeRaw(v: number): number {
  * 颜色索引拾取：把每个国家在离屏 canvas 上填成「编码 = 下标」的唯一颜色。
  * hover 时用射线求交得到球面点 -> 经纬度 -> 读像素 -> 解码出国家，O(1)。
  */
-export function createPicking(countries: Country[]): Picking {
+export function createPicking(
+  countries: Country[],
+  options: { width?: number; height?: number } = {},
+): Picking {
+  const W = options.width ?? DEFAULT_WIDTH;
+  const H = options.height ?? DEFAULT_HEIGHT;
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -136,47 +141,6 @@ export function createPicking(countries: Country[]): Picking {
     const y = Math.min(H - 1, Math.max(0, Math.floor(((90 - lat) / 180) * H)));
     const idx = decodeVote(x, y);
     return idx > 0 && idx <= countries.length ? countries[idx - 1] : null;
-  }
-
-  // 扫描每个编码的真实像素质心（等矩形投影下的可视中心），
-  // 覆盖 geoCentroid 的几何质心——后者对多岛国/狭长国常落在海上，
-  // 会让「点击飞行」对不准国家。
-  // 只统计「投影面积最大的 feature」（主陆）的像素：多岛国的全境像素质心
-  // 仍可能落在两岛之间的海上，主陆质心才是飞行定位想要的「国家中心」。
-  for (const c of countries) {
-    if (!c.code || !c.features.length) continue;
-    // 主陆 = 投影 bbox 面积最大的 feature
-    let main = c.features[0];
-    let mainArea = -1;
-    for (const f of c.features) {
-      const b = path.bounds(f);
-      const area = (b[1][0] - b[0][0]) * (b[1][1] - b[0][1]);
-      if (area > mainArea) {
-        mainArea = area;
-        main = f;
-      }
-    }
-    const bb = path.bounds(main);
-    const x0 = Math.max(0, Math.floor(bb[0][0]));
-    const y0 = Math.max(0, Math.floor(bb[0][1]));
-    const x1 = Math.min(W - 1, Math.ceil(bb[1][0]));
-    const y1 = Math.min(H - 1, Math.ceil(bb[1][1]));
-    let sx = 0, sy = 0, n = 0;
-    for (let y = y0; y <= y1; y++) {
-      for (let x = x0; x <= x1; x++) {
-        const o = (y * W + x) * 4;
-        const idx = decodeRaw((imageData[o] << 16) | (imageData[o + 1] << 8) | imageData[o + 2]);
-        if (idx !== c.code) continue;
-        sx += x;
-        sy += y;
-        n++;
-      }
-    }
-    if (n > 0) {
-      const lon = (sx / n / W) * 360 - 180;
-      const lat = 90 - (sy / n / H) * 180;
-      c.centroid = [lon, lat];
-    }
   }
 
   const texture = new THREE.CanvasTexture(canvas);

@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { geoEquirectangular, geoPath, geoGraticule10 } from 'd3-geo';
 import type { Country } from '../types';
 
-/** 主纹理尺寸：4096×2048 保证放大到 1.6 距离时国界依然清晰 */
-const W = 4096;
-const H = 2048;
+/** 默认主纹理尺寸；保持常用屏幕上的国界清晰度，同时避免首屏生成超大画布。 */
+const DEFAULT_WIDTH = 2048;
+const DEFAULT_HEIGHT = 1024;
 
 const COLORS = {
   ocean: '#0a1a2f',
@@ -20,7 +20,10 @@ const COLORS = {
 export function createEarth(
   countries: Country[],
   maxAnisotropy: number,
+  options: { width?: number; height?: number } = {},
 ): { mesh: THREE.Mesh; texture: THREE.CanvasTexture } {
+  const W = options.width ?? DEFAULT_WIDTH;
+  const H = options.height ?? DEFAULT_HEIGHT;
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
