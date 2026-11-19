@@ -149,31 +149,6 @@ body {
   background: none;
 }
 
-/* ── 测验入口按钮 ── */
-.quiz-btn {
-  padding: 9px 16px;
-  font-size: 13px;
-  color: rgba(255, 190, 130, 0.95);
-  background: var(--glass);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 157, 71, 0.25);
-  border-radius: 10px;
-  cursor: pointer;
-  letter-spacing: 0.04em;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.quiz-btn:hover {
-  background: rgba(255, 157, 71, 0.16);
-}
-
-.quiz-btn.on {
-  color: var(--text);
-  background: rgba(255, 157, 71, 0.25);
-  border-color: rgba(255, 157, 71, 0.5);
-}
-
 /* ── 大洲快捷定位 ── */
 .continents {
   position: absolute;
@@ -203,167 +178,16 @@ body {
   background: rgba(69, 211, 232, 0.18);
 }
 
-/* ── 测验卡片 ── */
-.quiz-card {
-  position: absolute;
-  top: 74px;
-  right: 20px;
-  width: 332px;
-  padding: 22px 20px 24px;
-  background: var(--glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 157, 71, 0.28);
-  border-radius: 14px;
-  transform: translateX(calc(100% + 28px));
-  transition: transform 0.38s cubic-bezier(0.22, 0.8, 0.3, 1);
-  pointer-events: auto;
-}
-
-.quiz-card.on {
-  transform: translateX(0);
-}
-
-.quiz-head {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.quiz-score {
-  color: rgba(255, 190, 130, 0.95);
-}
-
-.quiz-question {
-  margin-top: 18px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.quiz-target {
-  margin-top: 6px;
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-}
-
-.quiz-hint {
-  margin-top: 8px;
-  font-size: 12px;
-  color: rgba(69, 211, 232, 0.85);
-}
-
-.quiz-tip {
-  margin-top: 6px;
-  min-height: 18px;
-  font-size: 12px;
-  color: rgba(255, 190, 130, 0.9);
-}
-
-.quiz-skip {
-  margin-top: 10px;
-  padding: 6px 14px;
-  font-size: 12px;
-  color: var(--muted);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.quiz-skip:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.quiz-feedback {
-  padding: 10px 0 2px;
-}
-
-.quiz-verdict {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.quiz-answer {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.quiz-foot {
-  margin-top: 14px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.quiz-settle {
-  padding: 6px 0 0;
-  text-align: center;
-}
-
-.quiz-settle-title {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.quiz-settle-score {
-  margin-top: 10px;
-  font-size: 34px;
-  font-weight: 600;
-  color: rgba(255, 190, 130, 0.95);
-}
-
-.quiz-settle-meta {
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.quiz-settle-praise {
-  margin-top: 10px;
-  font-size: 14px;
-}
-
-.quiz-settle-actions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.quiz-settle-actions button {
-  padding: 8px 18px;
-  font-size: 13px;
-  border-radius: 9px;
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.quiz-again {
-  color: var(--text);
-  background: rgba(255, 157, 71, 0.2);
-  border-color: rgba(255, 157, 71, 0.4);
-}
-
-.quiz-again:hover {
-  background: rgba(255, 157, 71, 0.32);
-}
-
-.quiz-exit {
-  color: var(--muted);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.quiz-exit:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.12);
-}
-
 /* ── 旗帜图加载态 ── */
-.panel-flag {
+.panel-flag-frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 84px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
   background: linear-gradient(
     100deg,
     rgba(255, 255, 255, 0.04) 30%,
@@ -371,7 +195,36 @@ body {
     rgba(255, 255, 255, 0.04) 70%
   );
   background-size: 200% 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   animation: flag-shimmer 1.4s linear infinite;
+}
+
+.panel-flag-frame.loaded {
+  animation: none;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.panel-flag {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.panel-flag-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 42px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.panel-flag-fallback[hidden] {
+  display: none;
 }
 
 @keyframes flag-shimmer {
@@ -380,9 +233,16 @@ body {
   }
 }
 
-.panel-flag[src] {
-  animation: none;
-  background: none;
+/* ── 详情内容切换 ── */
+.panel-content {
+  transform: translateY(0);
+  opacity: 1;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.panel.switching .panel-content {
+  transform: translateY(8px);
+  opacity: 0;
 }
 
 .search-list .s-zh {
@@ -474,24 +334,6 @@ body {
 .panel-close:hover {
   color: var(--text);
   background: rgba(255, 255, 255, 0.14);
-}
-
-.panel-flag {
-  display: block;
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-
-.panel-flag-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 56px;
-  background: rgba(255, 255, 255, 0.04);
-  animation: none;
 }
 
 .panel-name-zh {
@@ -763,14 +605,6 @@ body {
     font-size: 11px;
   }
 
-  .quiz-btn {
-    position: absolute;
-    top: 62px;
-    left: 14px;
-    padding: 7px 10px;
-    font-size: 11px;
-  }
-
   .panel {
     top: auto;
     right: 10px;
@@ -786,10 +620,6 @@ body {
     transform: translateY(0);
   }
 
-  .panel-flag {
-    height: 112px;
-  }
-
   .panel-name-zh {
     font-size: 20px;
   }
@@ -802,5 +632,12 @@ body {
     font-size: 10px;
     text-align: center;
     text-overflow: ellipsis;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .panel-content {
+    transition: none;
   }
 }

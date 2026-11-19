@@ -1,6 +1,21 @@
 import * as THREE from 'three';
 import type { Country } from '../types';
 
+function hashKey(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function colorForCountry(country: Country): THREE.Color {
+  const key = country.a3 || country.a2 || country.en;
+  const hue = (hashKey(key) / 0xffffffff + 0.61803398875) % 1;
+  return new THREE.Color().setHSL(hue, 0.72, 0.58);
+}
+
 /**
  * 高亮层：半径略大的透明球，fragment shader 直接从拾取纹理解码国家编码，
  * 与当前 hover / 选中编码比对后着色。无需 CPU 重绘 canvas，hover 零延迟。
@@ -71,6 +86,7 @@ export function createHighlight(pickTexture: THREE.Texture) {
   return {
     mesh,
     setHover(c: Country | null) {
+      if (c) uniforms.uHoverColor.value.copy(colorForCountry(c));
       uniforms.uHover.value = c?.code ?? 0;
     },
     setSelected(c: Country | null) {

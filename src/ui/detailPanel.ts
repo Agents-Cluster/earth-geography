@@ -27,30 +27,77 @@ export interface DetailPanel {
   isOpen(): boolean;
 }
 
+const DETAIL_SWITCH_MS = 220;
+
 /** 详情卡：旗帜图 + 中英文名 + 大洲标签 + 属性行 + 邻国 chips */
 export function createPanel(el: HTMLElement, deps: PanelDeps): DetailPanel {
   let opened = false;
   let requestId = 0;
+  let displayedRequest = 0;
+  let switchTimer: number | undefined;
+  let pendingInsight: CountryInsight | null = null;
 
   function open(c: Country) {
     const currentRequest = ++requestId;
-    el.innerHTML = render(c, getLocalInsight(c), true);
-    el.classList.add('open');
-    opened = true;
-    bindEvents();
+    const html = render(c, getLocalInsight(c), true);
+    pendingInsight = null;
+    clearSwitchTimer();
+
+    if (!opened) {
+      mount(html, currentRequest);
+      el.classList.add('open');
+      opened = true;
+    } else if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      mount(html, currentRequest);
+      el.classList.remove('switching');
+    } else {
+      el.classList.add('switching');
+      switchTimer = window.setTimeout(() => {
+        if (!opened || currentRequest !== requestId) return;
+        mount(html, currentRequest);
+        el.classList.remove('switching');
+      }, DETAIL_SWITCH_MS);
+    }
 
     void loadCountryInsight(c).then((insight) => {
       if (!opened || currentRequest !== requestId) return;
-      const insightEl = el.querySelector<HTMLElement>('.panel-insights');
-      if (!insightEl) return;
-      insightEl.outerHTML = renderInsights(insight, false);
+      if (displayedRequest !== currentRequest) {
+        pendingInsight = insight;
+        return;
+      }
+      replaceInsights(insight);
     });
   }
 
   function close() {
     requestId += 1;
+    clearSwitchTimer();
+    pendingInsight = null;
+    displayedRequest = 0;
     el.classList.remove('open');
+    el.classList.remove('switching');
     opened = false;
+  }
+
+  function clearSwitchTimer() {
+    if (switchTimer !== undefined) window.clearTimeout(switchTimer);
+    switchTimer = undefined;
+  }
+
+  function mount(html: string, request: number) {
+    el.innerHTML = html;
+    displayedRequest = request;
+    bindEvents();
+    if (pendingInsight) {
+      const insight = pendingInsight;
+      pendingInsight = null;
+      replaceInsights(insight);
+    }
+  }
+
+  function replaceInsights(insight: CountryInsight) {
+    const insightEl = el.querySelector<HTMLElement>('.panel-insights');
+    if (insightEl) insightEl.outerHTML = renderInsights(insight, false);
   }
 
   function bindEvents() {
@@ -64,15 +111,25 @@ export function createPanel(el: HTMLElement, deps: PanelDeps): DetailPanel {
         if (target) deps.onSelect(target);
       });
     });
+    el.querySelectorAll<HTMLImageElement>('.panel-flag').forEach((img) => {
+      const frame = img.closest('.panel-flag-frame');
+      const markLoaded = () => frame?.classList.add('loaded');
+      const showFallback = () => {
+        img.hidden = true;
+        frame?.classList.add('loaded');
+        frame?.querySelector<HTMLElement>('.panel-flag-fallback')?.removeAttribute('hidden');
+      };
+      img.addEventListener('load', markLoaded);
+      img.addEventListener('error', showFallback);
+      if (img.complete) {
+        if (img.naturalWidth > 0) markLoaded();
+        else showFallback();
+      }
+    });
   }
 
   function render(c: Country, insight: CountryInsight, loading: boolean): string {
-    const flag = c.a2
-      ? `<img class="panel-flag" src="https://flagcdn.com/w320/${c.a2.toLowerCase()}.png"
-            alt="${escHtml(c.en)} 旗帜" onerror="this.style.display='none'">`
-      : c.emoji
-        ? `<div class="panel-flag panel-flag-fallback">${escHtml(c.emoji)}</div>`
-        : '';
+    const flag = renderFlag(c);
 
     const region = CONTINENT_ZH[c.region] ?? c.region;
     const sub = c.subregion ? SUBREGION_ZH[c.subregion] ?? c.subregion : null;
@@ -109,26 +166,36 @@ export function createPanel(el: HTMLElement, deps: PanelDeps): DetailPanel {
 
     return `
       <button class="panel-close" aria-label="关闭">✕</button>
-      ${flag}
-      <h2 class="panel-name-zh">${escHtml(c.zh)}</h2>
-      <div class="panel-name-en">${escHtml(c.en)}</div>
-      <div class="panel-region">
-        ${region ? `<span>${escHtml(region)}</span>` : ''}
-        ${sub ? `<span>${escHtml(sub)}</span>` : ''}
+      <div class="panel-content">
+        ${flag}
+        <h2 class="panel-name-zh">${escHtml(c.zh)}</h2>
+        <div class="panel-name-en">${escHtml(c.en)}</div>
+        <div class="panel-region">
+          ${region ? `<span>${escHtml(region)}</span>` : ''}
+          ${sub ? `<span>${escHtml(sub)}</span>` : ''}
+        </div>
+        <dl class="panel-grid">
+          <div class="p-row"><dt>首都</dt><dd ${capitalTitle ? `title="${capitalTitle}"` : ''}>${capitalText}</dd></div>
+          <div class="p-row"><dt>人口</dt><dd>${formatPopulation(c.pop)}</dd></div>
+          <div class="p-row"><dt>面积</dt><dd>${formatArea(c.area)}</dd></div>
+          <div class="p-row"><dt>官方语言</dt><dd>${langs ? escHtml(langs) : '—'}</dd></div>
+          <div class="p-row"><dt>货币</dt><dd>${currencies ? escHtml(currencies) : '—'}</dd></div>
+          <div class="p-row"><dt>时区</dt><dd>${tz}</dd></div>
+          <div class="p-row"><dt>电话区号</dt><dd>${formatIDD(c.idd)}</dd></div>
+        </dl>
+        ${renderInsights(insight, loading)}
+        <h3 class="section">${neighbors.length ? `陆上邻国 · ${neighbors.length}` : '地理概况'}</h3>
+        <div class="chips">${chips}</div>
       </div>
-      <dl class="panel-grid">
-        <div class="p-row"><dt>首都</dt><dd ${capitalTitle ? `title="${capitalTitle}"` : ''}>${capitalText}</dd></div>
-        <div class="p-row"><dt>人口</dt><dd>${formatPopulation(c.pop)}</dd></div>
-        <div class="p-row"><dt>面积</dt><dd>${formatArea(c.area)}</dd></div>
-        <div class="p-row"><dt>官方语言</dt><dd>${langs ? escHtml(langs) : '—'}</dd></div>
-        <div class="p-row"><dt>货币</dt><dd>${currencies ? escHtml(currencies) : '—'}</dd></div>
-        <div class="p-row"><dt>时区</dt><dd>${tz}</dd></div>
-        <div class="p-row"><dt>电话区号</dt><dd>${formatIDD(c.idd)}</dd></div>
-      </dl>
-      ${renderInsights(insight, loading)}
-      <h3 class="section">${neighbors.length ? `陆上邻国 · ${neighbors.length}` : '地理概况'}</h3>
-      <div class="chips">${chips}</div>
     `;
+  }
+
+  function renderFlag(c: Country): string {
+    const fallback = c.emoji || '旗帜暂不可用';
+    const image = c.a2
+      ? `<img class="panel-flag" src="https://flagcdn.com/w320/${c.a2.toLowerCase()}.png" alt="${escHtml(c.en)} 旗帜" decoding="async">`
+      : '';
+    return `<div class="panel-flag-frame">${image}<span class="panel-flag-fallback"${c.a2 ? ' hidden' : ''}>${escHtml(fallback)}</span></div>`;
   }
 
   function renderInsights(insight: CountryInsight, loading: boolean): string {

@@ -14,7 +14,6 @@ import { createStore } from './state';
 import { createTooltip } from './ui/tooltip';
 import { createPanel } from './ui/detailPanel';
 import { createSearch } from './ui/search';
-import { createQuiz } from './ui/quiz';
 
 function boot() {
   const loadingEl = document.getElementById('loading')!;
@@ -25,7 +24,7 @@ function boot() {
   try {
     ctx = createScene(container);
   } catch {
-    loadingEl.innerHTML = '<p>当前浏览器不支持 WebGL，无法渲染三维场景。</p>';
+    loadingEl.innerHTML = '<p>当前浏览器暂时无法显示地球，请更换浏览器重试。</p>';
     return;
   }
 
@@ -52,29 +51,6 @@ function boot() {
     getCountries: () => countries,
     onSelect: select,
     getSelected: () => store.selected,
-  });
-
-  // ── 测验模式 ──
-  const quizBtn = document.getElementById('quizBtn')!;
-  const quiz = createQuiz(document.getElementById('quizCard')!, {
-    getCountries: () => countries,
-    onCorrect: (c) => store.setSelected(c),
-    onReveal: (c) => store.setSelected(c),
-    onClear: () => store.setSelected(null),
-    onExit: () => {
-      quizBtn.classList.remove('on');
-      quizBtn.textContent = '🎯 测验';
-    },
-  });
-  quizBtn.addEventListener('click', () => {
-    if (quiz.isActive()) {
-      quiz.stop();
-    } else {
-      deselect();
-      quiz.start();
-      quizBtn.classList.add('on');
-      quizBtn.textContent = '✕ 退出测验';
-    }
   });
 
   // ── 大洲快捷定位 ──
@@ -187,13 +163,6 @@ function boot() {
       canvasEl.style.cursor = 'grabbing';
       return;
     }
-    // 测验模式禁用 hover 提示（避免开卷作答）
-    if (quiz.isActive()) {
-      store.setHovered(null);
-      tooltip.hide();
-      canvasEl.style.cursor = 'crosshair';
-      return;
-    }
     const c = pickAt(e.clientX, e.clientY);
     store.setHovered(c);
     canvasEl.style.cursor = c ? 'pointer' : 'grab';
@@ -214,10 +183,6 @@ function boot() {
     // 位移大或时间长视为拖拽，不触发选中
     if (dx * dx + dy * dy > 36 || dt > 400) return;
     const c = pickAt(e.clientX, e.clientY);
-    if (quiz.isActive()) {
-      quiz.handlePick(c);
-      return;
-    }
     if (c) select(c);
     else deselect();
   });
@@ -228,14 +193,8 @@ function boot() {
   });
 
   window.addEventListener('keydown', (e) => {
-    // 搜索框自己处理 Esc；全局 Esc 关闭详情卡（测验中先退测验）
+    // 搜索框自己处理 Esc；全局 Esc 关闭详情卡
     if (e.key === 'Escape' && !(e.target instanceof HTMLInputElement)) {
-      if (quiz.isActive()) {
-        quiz.stop();
-        quizBtn.classList.remove('on');
-        quizBtn.textContent = '🎯 测验';
-        return;
-      }
       deselect();
     }
   });
